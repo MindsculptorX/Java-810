@@ -7,8 +7,8 @@ int next[][]= new int[WIDTH/UnitSize][HEIGHT/UnitSize];
 int n=WIDTH/UnitSize;
 int m=HEIGHT/UnitSize;
 
-int rate=20;//(rate/100 is black)
-int changeRange=30;//(click influnce 3*3)
+int rate=3;//(rate/100 is black)
+int changeRange=20;//(click influnce 3*3)
 
 void setup(){
   size(800,800); 
@@ -21,7 +21,7 @@ void setup(){
         now[i][j]=0;
     }
   }
-  //frameRate(1);
+ // frameRate(1);
 } 
 
 
@@ -68,14 +68,14 @@ void draw(){
 }
 
 
-
-void mousePress(){
+//void mouseMoved(){
+void mousePressed(){
 int x= mouseX/UnitSize;
 int y= mouseY/UnitSize;
-
-for(int i=x-changeRange;i<x+changeRange;i++)
-  for(int j=y-changeRange;j<y+changeRange;j++){
-    println(i,",",j);
+println(x,y);
+for(int i=max(x-changeRange,0);i<min(x+changeRange,n);i++)
+  for(int j=max(y-changeRange,0);j<min(y+changeRange,m);j++){
+    println(i,j);
     now[i][j]=1-now[i][j];
   }
 }
