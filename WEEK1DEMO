@@ -1,0 +1,502 @@
+//Sorry,I forget to trans Chinese into English. I will do this job in today evening (March 20th) 
+
+
+import java.awt.*;   
+import java.awt.event.*;   
+import java.awt.image.BufferedImage;   
+import java.io.File;   
+import java.util.Date;   
+import javax.imageio.ImageIO;   
+import javax.swing.*;   
+   
+   
+class J_Panel extends JPanel implements ActionListener    
+{    
+    BufferedImage m_image = new BufferedImage(1300,800,BufferedImage.TYPE_INT_RGB);//缓存帧，用于提高动画质量   
+  BufferedImage sun , mercury , venus , earth , mars , jupiter , saturn , uranus , neptune , pluto;//太阳系成员   
+  Timer m_timer;                   //通过计时器控制动画   
+  public static int i,j;           //记录鼠标操作与绘图原点之间的距离，以便实现图像拖拽功能   
+  public static int n=0;           //记录鼠标滚轮旋转格数，以便实现图像缩放功能   
+  public static int jishu=1;       //计数，用于鼠标双击事件（停止和启动动画）   
+  static int O_x = 600;   
+  static int O_y = 375;            //画图原点   
+  static long timer1=0 , timer2=0; //记录鼠标点击时的当前时间，用于通过时间监视实现鼠标双击   
+     
+  double t1=0 , t2=0 , t3=0 , t4=0 , t5=0 , t6=0 , t7=0 , t8=0 , t9=0;   
+    //行星运行时变换的角度，依次对应：水星、金星、地球、火星、木星、土星、天王星、海王星、冥王星   
+     
+  boolean m_frozen = false;        //计时器状态，当为true时暂停动画；否则启动   
+  boolean m_ready = true;          //缓存帧准备状态，用于提高动画质量   
+     
+  public J_Panel()   
+  {   
+      //异常处理开始   
+      try   
+        {   
+            //读取照片，依次对应：水星、金星、地球、火星、木星、土星、天王星、海王星、冥王星   
+          File f1 = new File("sun.gif");   
+          File f2 = new File("mercury.gif");   
+          File f3 = new File("venus.gif");   
+          File f4 = new File("earth.gif");   
+          File f5 = new File("mars.gif");   
+          File f6 = new File("jupiter.gif");   
+          File f7 = new File("saturn.gif");   
+          File f8 = new File("uranus.gif");   
+          File f9 = new File("neptune.gif");       
+          File f10 = new File("pluto.gif");     
+        sun = ImageIO.read(f1);   
+        mercury = ImageIO.read(f2);   
+        venus = ImageIO.read(f3);   
+        earth = ImageIO.read(f4);   
+        mars = ImageIO.read(f5);   
+        jupiter = ImageIO.read(f6);   
+        saturn = ImageIO.read(f7);   
+        uranus = ImageIO.read(f8);   
+        neptune = ImageIO.read(f9);   
+        pluto = ImageIO.read(f10);     
+                   
+        m_timer = new Timer(50,this);   
+        m_timer.setInitialDelay(0);    
+        m_timer.setCoalesce(true);     
+        m_timer.start();            //设置计时器参数，控制动画效果（每隔50毫秒显示一帧动画）   
+           
+        this.addMouseListener(new MouseAdapter()   
+        {   
+          public void mousePressed(MouseEvent e)   
+          {   
+            i=e.getX()-O_x;   
+            j=e.getY()-O_y;   
+          }   
+        });//鼠标点击控制移动距离   
+   
+        this.addMouseListener(new MouseAdapter()   
+        {   
+          public void mousePressed(MouseEvent e)   
+          {   
+            if(jishu==1)   
+            {      
+              jishu=2;   
+              Date d1 = new Date();   
+              timer1 = d1.getTime();       
+        
+            }//得到双击事件中第一次点击时的当前时间与1970年1月1日格林威治标准时间00：00：00之差的毫秒数   
+            else if(jishu==2)   
+            {   
+              jishu=1;   
+              Date d2 = new Date();          
+              timer2 = d2.getTime();       
+                
+            }//得到双击事件中第二次点击时的当前时间与1970年1月1日格林威治标准时间00：00：00之差的毫秒数   
+            if(Math.abs(timer2-timer1)<=400)   
+            {   
+              m_frozen = !m_frozen;   
+              if(m_frozen)   
+                m_timer.stop();   
+              else m_timer.start();    
+            }//设定双击时间间隔（400毫秒以内），用以判断是否为双击事件，进而引发动画停止与启动   
+          }   
+        });//鼠标双击控制动画停止或启动   
+           
+        this.addMouseMotionListener(new MouseMotionAdapter()   
+        {   
+          public void mouseDragged(MouseEvent e)   
+          {   
+            O_x=e.getX()-i;   
+            O_y=e.getY()-j;    
+            repaint();  //调用paint()方法   
+          }        
+        });//注册鼠标拖动事件，实现图像拖拽功能    
+           
+        this.addMouseWheelListener(new MouseAdapter()   
+        {   
+          public void mouseWheelMoved(MouseWheelEvent e)   
+          {   
+               
+            n+=e.getWheelRotation();//记录鼠标滚轮旋转格数，以便实现图像缩放功能   
+               
+          }        
+        });//注册鼠标滚轮事件，实现图像缩放功能   
+      }   
+      catch (Exception e)   
+      {   
+        System.err.println("发生异常："+e);   
+        e.printStackTrace();       
+      }   
+      //异常处理结束   
+  }//J_Panel构造方法结束    
+     
+  //配合计时器每隔50毫秒触发事件（此中为显示一帧动画）   
+  public void actionPerformed(ActionEvent e)   
+  {   
+    //按实际比例比较精确地计算各行星运行时坐标变换（通过角度变换实现）   
+    t1+=0.333333*100*Math.PI/180; //水星运行时角度变换   
+    t2+=0.1825*100*Math.PI/180;   //金星运行时角度变换   
+    t3+=0.125*100*Math.PI/180;    //地球运行时角度变换   
+    t4+=0.071*100*Math.PI/180;    //火星运行时角度变换   
+    t5+=0.026*125*Math.PI/180;    //木星运行时角度变换   
+    t6+=0.011*125*Math.PI/180;    //土星运行时角度变换   
+    t7+=0.00374*150*Math.PI/180;  //天王星运行时角度变换   
+    t8+=0.00198*150*Math.PI/180;  //海王星运行时角度变换   
+    t9+=0.0017*250*Math.PI/360;   //冥王星运行时角度变换       
+       
+    repaint();                    //调用paint()方法，实现动画效果     
+       
+  }   
+     
+  //   
+  public void mb_draw()   
+  {   
+    if(!m_ready) return;   
+    m_ready = false;         //开始准备缓存帧   
+    Graphics2D g2d = m_image.createGraphics();   
+       
+    g2d.clearRect(0,0,getWidth(),getHeight());//清屏，以实现动画效果   
+       
+    g2d.setColor(Color.black);   
+    g2d.fillRect(0,0,1300,900);//背景   
+       
+    g2d.drawImage(sun,O_x-25-n,O_y-25-n,50+2*n,50+2*n,this);//太阳   
+       
+    g2d.translate(O_x,O_y);//原点移动到太阳中心   
+       
+       
+    g2d.rotate(-0.1521730476);//水星轨道倾角（7.0度）   
+       
+    //绘制水星轨道   
+    g2d.setColor(Color.blue);   
+    g2d.drawArc((int)(-30-6*n/5),(int)(-8-8*n/25),(int)(60+12*n/5),(int)(16+16*n/25),30,180);   
+    g2d.setColor(Color.green);   
+    g2d.drawArc((int)(-30-6*n/5),(int)(-8-8*n/25),(int)(60+12*n/5),(int)(16+16*n/25),210,180);   
+       
+    //通过坐标变化绘制水星，实现水星按轨道旋转（通过角度变化实现）   
+    g2d.drawImage(mercury,(int)((30+6*n/5)*Math.cos(t1)-5-n/5),   
+                  (int)((8+8*n/25)*Math.sin(t1)-5-n/5),(int)(10+2*n/5),(int)(10+2*n/5),this);   
+       
+       
+    g2d.rotate(+0.1521730476);   
+    //水星系统结束   
+       
+       
+    g2d.rotate(-0.08934119457);//金星轨道倾角（3.4度）   
+       
+    //绘制金星轨道   
+    g2d.setColor(Color.blue);   
+    g2d.drawArc((int)(-40-8*n/5),(int)(-12-12*n/25),(int)(80+16*n/5),(int)(24+24*n/25),30,180);   
+    g2d.setColor(Color.green);   
+    g2d.drawArc((int)(-40-8*n/5),(int)(-12-12*n/25),(int)(80+16*n/5),(int)(24+24*n/25),210,180);   
+       
+    //通过坐标变化绘制金星，实现金星按轨道旋转（通过角度变化实现）   
+    g2d.drawImage(venus,(int)((40+8*n/5)*Math.cos(t2)-8-8*n/25),   
+                  (int)((12+12*n/25)*Math.sin(t2)-8-8*n/25),(int)(16+16*n/25),(int)(16+16*n/25),this);   
+       
+    g2d.rotate(+0.08934119457);   
+    //金星系统结束   
+       
+       
+    //绘制地球轨道   
+    g2d.setColor(Color.blue);   
+    g2d.drawArc((int)(-50-2*n),(int)(-20-4*n/5),(int)(100+4*n),(int)(40+8*n/5),30,180);   
+    g2d.setColor(Color.green);   
+    g2d.drawArc((int)(-50-2*n),(int)(-20-4*n/5),(int)(100+4*n),(int)(40+8*n/5),210,180);       
+       
+    //通过坐标变化绘制地球，实现地球按轨道旋转（通过角度变化实现）   
+    g2d.drawImage(earth,(int)((50+2*n)*Math.cos(t3)-8-8*n/25),   
+                  (int)((20+4*n/5)*Math.sin(t3)-8-8*n/25),(int)(16+16*n/25),(int)(16+16*n/25),this);   
+    //地球系统结束（无倾角）   
+     
+     
+    g2d.rotate(-0.03141592654);//火星轨道倾角（1.8度）   
+       
+    //绘制火星轨道   
+    g2d.setColor(Color.blue);   
+    g2d.drawArc((int)(-70-14*n/5),(int)(-25-n),(int)(140+28*n/5),(int)(50+2*n),30,180);   
+    g2d.setColor(Color.green);   
+    g2d.drawArc((int)(-70-14*n/5),(int)(-25-n),(int)(140+28*n/5),(int)(50+2*n),210,180);   
+       
+    //通过坐标变化绘制火星，实现火星按轨道旋转（通过角度变化实现）   
+    g2d.drawImage(mars,(int)((70+14*n/5)*Math.cos(t4)-8-8*n/25),   
+                  (int)((25+n)*Math.sin(t4)-8-8*n/25),(int)(16+16*n/25),(int)(16+16*n/25),this);   
+       
+    g2d.rotate(+0.03141592654);   
+    //火星系统结束   
+       
+       
+    g2d.rotate(-0.02268928028);//木星轨道倾角（1.3度）   
+       
+    //绘制木星轨道   
+    g2d.setColor(Color.blue);   
+    g2d.drawArc((int)(-105-21*n/5),(int)(-30-6*n/5),(int)(210+42*n/5),(int)(60+12*n/5),30,180);   
+    g2d.setColor(Color.green);   
+    g2d.drawArc((int)(-105-21*n/5),(int)(-30-6*n/5),(int)(210+42*n/5),(int)(60+12*n/5),210,180);   
+       
+    //通过坐标变化绘制木星，实现木星按轨道旋转（通过角度变化实现）   
+    g2d.drawImage(jupiter,(int)((105+21*n/5)*Math.cos(t5)-25-n),   
+                   (int)((30+6*n/5)*Math.sin(t5))-25-n,50+2*n,50+2*n,this);   
+       
+    g2d.rotate(+0.02268928028);   
+    //木星系统结束   
+       
+       
+    g2d.rotate(-0.0736332313);//土星轨道倾角（2.5度）   
+       
+    //绘制土星轨道   
+    g2d.setColor(Color.blue);   
+    g2d.drawArc((int)(-190-38*n/5),(int)(-50-2*n),(int)(380+76*n/5),100+4*n,30,180);   
+    g2d.setColor(Color.green);   
+    g2d.drawArc((int)(-190-38*n/5),(int)(-50-2*n),(int)(380+76*n/5),100+4*n,210,180);   
+       
+    //通过坐标变化绘制土星，实现土星按轨道旋转（通过角度变化实现）   
+    g2d.drawImage(saturn,(int)((190+38*n/5)*Math.cos(t6)-24-24*n/25),   
+                   (int)((50+2*n)*Math.sin(t6)-12-12*n/25),48+48*n/25,24+24*n/25,this);   
+       
+    g2d.rotate(+0.0736332313);   
+    //土星系统结束   
+       
+       
+    g2d.rotate(-0.01396263402);//天王星轨道倾角（0.8度）   
+       
+    //绘制天王星轨道   
+    g2d.setColor(Color.blue);   
+    g2d.drawArc((int)(-380-76*n/5),(int)(-80-16*n/5),(int)(760+152*n/5),(int)(160+32*n/5),30,180);   
+    g2d.setColor(Color.green);   
+    g2d.drawArc((int)(-380-76*n/5),(int)(-80-16*n/5),(int)(760+152*n/5),(int)(160+32*n/5),210,180);   
+       
+    //通过坐标变化绘制天王星，实现天王星按轨道旋转（通过角度变化实现）   
+    g2d.drawImage(uranus,(int)((380+76*n/5)*Math.cos(t7)-40-8*n/5),   
+                   (int)((80+16*n/5)*Math.sin(t7)-40-8*n/5),(int)(80+16*n/5),(int)(80+16*n/5),this);   
+       
+    g2d.rotate(+0.01396263402);   
+    //天王星系统结束   
+       
+       
+    g2d.rotate(-0.03141592654);//海王星轨道倾角（1.8度）   
+       
+    //绘制海王星轨道   
+    g2d.setColor(Color.blue);   
+    g2d.drawArc((int)(-580-116*n/5),(int)(-120-24*n/5),(int)(1160+232*n/5),(int)(240+48*n/5),30,180);   
+    g2d.setColor(Color.green);   
+    g2d.drawArc((int)(-580-116*n/5),(int)(-120-24*n/5),(int)(1160+232*n/5),(int)(240+48*n/5),210,180);   
+       
+    //通过坐标变化绘制海王星，实现海王星按轨道旋转（通过角度变化实现）   
+    g2d.drawImage(neptune,(int)((580+116*n/5)*Math.cos(t8)-18-18*n/25),   
+                  (int)((120+24*n/5)*Math.sin(t8)-18-18*n/25),(int)(36+36*n/25),(int)(36+36*n/25),this);   
+       
+    g2d.rotate(+0.03141592654);   
+    //海王星系统结束   
+       
+       
+    g2d.translate(60,0);//坐标原点移动，以便实现冥王星特殊的轨道   
+        
+        
+    g2d.rotate(-0.2984513021);//冥王星轨道倾角（17.1度）   
+       
+    //绘制冥王星轨道   
+    g2d.setColor(Color.blue);   
+    g2d.drawArc(-600-24*n,-100-4*n,1200+48*n,200+8*n,30,180);   
+    g2d.setColor(Color.green);   
+    g2d.drawArc(-600-24*n,-100-4*n,1200+48*n,200+8*n,210,180);   
+       
+    //通过坐标变化绘制冥王星，实现冥王星按轨道旋转（通过角度变化实现）   
+    g2d.drawImage(pluto,(int)((600+24*n)*Math.cos(t9)-16-16*n/25),   
+                   (int)((100+4*n)*Math.sin(t9)-16-16*n/25),(int)(32+32*n/25),(int)(32+32*n/25),this);   
+       
+    g2d.rotate(+0.2984513021);   
+    //冥王星系统结束   
+       
+    m_ready = true;//缓存帧准备好   
+  }   
+     
+  public void paint(Graphics g)   
+  {   
+    if(m_ready)   
+      g.drawImage(m_image,0,0,1300,800,this);   
+    mb_draw();     
+  }//paint()方法结束，实现动画   
+}//类J_Panel结束   
+   
+   
+public class Solarsystem    
+{   
+       
+    static Container c;  //框架的内容窗格   
+       
+  public static void main(String args[])   
+  {   
+    JFrame app = new JFrame("太阳系行星运行图");   
+    app.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);   
+    app.setSize(1300,800);   
+    c = app.getContentPane();   
+    c.setLayout(null);   
+    c.setBackground(Color.black);//框架的实现及各参数设置   
+           
+    JMenuBar mBar = new JMenuBar();   
+    app.setJMenuBar(mBar);//设置菜单   
+    JMenu m[]={new JMenu("太阳系 Solarsystem (0) "),new JMenu("   太阳 Sun (1)  "),new JMenu("   水星 Mercury (2)  "),   
+                 new JMenu("   金星 Venus (3)  "),new JMenu("   地球 Earth (4)  "),new JMenu("   火星 Mars (5)  "),   
+                 new JMenu("   木星 Jupiter (6)  "),new JMenu("   土星 Saturn (7)  "),   
+                 new JMenu("   天王星 Uranus (8)  "),new JMenu("   海王星 Neptune (9)  "),new JMenu("   冥王星 Pluto (A)   ")};   
+    for(int i=0;i<m.length;i++)   
+      mBar.add(m[i]);//设置下拉式菜单选项用于简介   
+       
+    char []ch={'0','1','2','3','4','5','6','7','8','9','A'};   
+    for(int i=0;i<m.length;i++)   
+      m[i].setMnemonic(ch[i]);//设置助记符   
+      
+    JMenuItem mI0[]={new JMenuItem("最大范围：  约可延伸到1光年以外"),   
+                      new JMenuItem("中心天体：  太阳"),   
+                      new JMenuItem("类地行星：  水星、金星、地球、火星"),   
+                      new JMenuItem("类木行星：  木星、土星、天王星、海王星"),   
+                      new JMenuItem("距银河系中心： 约8.5千秒差距(即不到3万光年)")};   
+    //创建菜单项（太阳系的基本数据）   
+       
+    JMenuItem mI1[]={ new JMenuItem("半径:   696295 千米"),   
+                        new JMenuItem("质量:   1.989×10^30 千克"),   
+                        new JMenuItem("温度:   5800 ℃ (表面)   1560万℃ (核心)"),   
+                        new JMenuItem("总辐射功率:  3.83×10^26  焦耳/秒"),   
+                        new JMenuItem("平均密度:  1.409 克/立方厘米"),   
+                        new JMenuItem("日地平均距离:  1亿5千万 千米"),   
+                        new JMenuItem("年龄:   约50亿年")};   
+    //创建菜单项（太阳的基本数据）   
+       
+    JMenuItem mI2[]={new JMenuItem("轨道半长径： 5791万 千米 (0.38 天文单位)"),   
+                      new JMenuItem("公转周期：  87.70 天"),   
+                      new JMenuItem("自转周期：  58.65 日"),   
+                      new JMenuItem("平均轨道速度：  47.89 千米/每秒"),   
+                      new JMenuItem("轨道偏心率：   0.206"),   
+                      new JMenuItem("轨道倾角：    7.0 度"),   
+                      new JMenuItem("行星赤道半径：   2440 千米"),   
+                      new JMenuItem("质量(地球质量＝1)：   0.0553"),   
+                      new JMenuItem("密度：   5.43 克/立方厘米"),   
+                      new JMenuItem("卫星数：   无"),   
+                      new JMenuItem("公转轨道: 距太阳 57,910,000 千米 (0.38 天文单位)"),   
+                      new JMenuItem("赤道逃逸速度： 4.25 km/sec 平均地表温度 179°C "),   
+                      new JMenuItem("最高地表温度： 427°C 最低地表温度 -173°C "),   
+                      new JMenuItem("大气组成：  氦 42% 钠 42% 氧 15% 其它 1% ")};   
+    //创建菜单项（水星的基本数据）   
+       
+    JMenuItem mI3[]={new JMenuItem("公转周期：   224.701天"),   
+                      new JMenuItem("平均轨道速度：   35.03 千米/每秒"),   
+                      new JMenuItem("轨道偏心率：   0.007"),   
+                      new JMenuItem("轨道倾角：   3.4 度"),   
+                      new JMenuItem("赤道直径：                          12,103.6千米"),   
+                      new JMenuItem("质量(地球质量＝1)：  0.8150"),   
+                      new JMenuItem("密度：    5.24 克/立方厘米"),   
+                      new JMenuItem("自转周期：   243.01 日"),   
+                      new JMenuItem("卫星数量:    无 "),   
+                      new JMenuItem("公转半径：   108,208,930 km(0.72 天文单位)"),   
+                      new JMenuItem("表面面积：   4.6亿 平方千米"),   
+                      new JMenuItem("表面引力：   8.78 m/s2 "),   
+                      new JMenuItem("逃逸速度：   10.4 千米/秒"),   
+                      new JMenuItem("表面温度： 最低 平均 最高 737K 750K 773K ")};   
+    //创建菜单项（金星的基本数据）   
+       
+    JMenuItem mI4[]={new JMenuItem("轨道长半径(千万公里)： 14.96(1.0 天文单位)"),   
+                      new JMenuItem("公转的恒星周期(日)： 365.26 "),   
+                      new JMenuItem("轨道偏心率：  0.017 "),   
+                      new JMenuItem("轨道倾角(度)：  0.0 "),   
+                      new JMenuItem("升交点黄经(度)：  0.0 "),   
+                      new JMenuItem("近日点黄经(度)：  102.3 "),   
+                      new JMenuItem("平均轨道速度(公里)：  29.79 "),   
+                      new JMenuItem("赤道半径(公里)：  6378 "),   
+                      new JMenuItem("扁率：  0.0034 "),   
+                      new JMenuItem("质量(地球质量=1)：  1.000 "),   
+                      new JMenuItem("密度(克/立方厘米)：  5.52 "),   
+                      new JMenuItem("赤道引力(地球=1)：  1.00 "),   
+                      new JMenuItem("逃逸速度(公里/秒)：  11.2 "),   
+                      new JMenuItem("自转周期(日)：  0.9973 "),   
+                      new JMenuItem("黄赤交角(度)：  23.44 "),   
+                      new JMenuItem("反照率：  0.40 "),   
+                      new JMenuItem("卫星数(已确认的)： 1 ")};   
+    //创建菜单项（地球的基本数据）   
+       
+    JMenuItem mI5[]={new JMenuItem("轨道长半径：  2.28*10^8"),   
+                      new JMenuItem("轨道偏心率：  0.093"),   
+                      new JMenuItem("轨道倾角：  1.8 度"),   
+                      new JMenuItem("公转周期：  686.98 天"),   
+                      new JMenuItem("自身半径：  6794 千米"),   
+                      new JMenuItem("转速： 24.1 Km/s"),   
+                      new JMenuItem("自转周期：  约为24.6小时")};      
+    //创建菜单项（火星的基本数据）   
+       
+    JMenuItem mI6[]={new JMenuItem("公转轨道:  距太阳 778,330,000 千米 (5.20 天文单位)"),   
+                      new JMenuItem("行星直径:  142,984 千米 (赤道)"),   
+                      new JMenuItem("质量:  1.90*10^27千克"),   
+                      new JMenuItem("公转周期： 4332.589天(约合11.86年)"),   
+                      new JMenuItem("反照率：  0.05"),   
+                      new JMenuItem("卫星数：  16")};   
+    //创建菜单项（木星的基本数据）   
+       
+    JMenuItem mI7[]={new JMenuItem("轨道长半径(千万公里)： 1427.0(9.539 天文单位)"),   
+                      new JMenuItem("公转的恒星周期(日):  10759.5 "),   
+                      new JMenuItem("公转的会合周期(日):  378 "),   
+                      new JMenuItem("轨道偏心率:   0.056 "),   
+                      new JMenuItem("轨道倾角(度):   2.5 "),   
+                      new JMenuItem("升交点黄经(度):   113.3 "),   
+                      new JMenuItem("近日点黄经(度):   92.3 "),   
+                      new JMenuItem("平均轨道速度(公里):   9.64 "),   
+                      new JMenuItem("赤道半径(公里):   60330 "),   
+                      new JMenuItem("扁率:   0.102 "),   
+                      new JMenuItem("质量(地球质量=1)： 95.159 "),   
+                      new JMenuItem("密度(克/立方厘米)：  0.70 "),   
+                      new JMenuItem("赤道引力(地球=1)：  1.08 "),   
+                      new JMenuItem("逃逸速度(公里/秒)：  35.6 "),   
+                      new JMenuItem("自转周期(日)：  0.426 "),   
+                      new JMenuItem("黄赤交角(度)：  26.73 "),   
+                      new JMenuItem("反照率：  0.57 "),   
+                      new JMenuItem("最大亮度：  0.4 "),   
+                      new JMenuItem("卫星数(已确认的)：  23")};   
+    //创建菜单项（土星的基本数据）   
+       
+    JMenuItem mI8[]={new JMenuItem("公转轨道: 距太阳2,870,990,000 千米 (19.218 天文单位)"),   
+                      new JMenuItem("行星直径:   51,118 千米(赤道) "),   
+                      new JMenuItem("质量:   8.683e25 千克 "),   
+                      new JMenuItem("大气层含量： 大约83％的氢，15％的氦和2％的甲烷"),   
+                      new JMenuItem("卫星： 15颗已命名的卫星(2颗已发现但暂未命名)")};   
+    //创建菜单项（天王星的基本数据）   
+       
+    JMenuItem mI9[]={new JMenuItem("公转轨道:  距太阳 4,504,000,000 千米 (30.06 天文单位)"),   
+                      new JMenuItem("轨道倾角： 1.769 度"),   
+                      new JMenuItem("行星直径:  49,532 千米(赤道) "),   
+                      new JMenuItem("质量:  1.0247e26 千克  "),   
+                      new JMenuItem("卫星： 8颗已知卫星(7颗小卫星和海卫一，其中海卫一是太阳系质量最大的卫星)")};                                   
+    //创建菜单项（海王星的基本数据）   
+       
+    JMenuItem mI10[]={new JMenuItem("公转轨道：离太阳平均距离5,913,520,000千米(39.5天文单位)"),   
+                      new JMenuItem("质量： 1.27e22千克"),   
+                      new JMenuItem("半径： 1350千米 "),   
+                      new JMenuItem("周期： 90465日 "),   
+                      new JMenuItem("轨道偏心率：  0.256 "),   
+                      new JMenuItem("轨道倾角：  17.1°")};      
+    //创建菜单项（冥王星的基本数据）                     
+                          
+    for(int i=0;i<mI0.length;i++)   
+      m[0].add(mI0[i]);   
+    for(int i=0;i<mI1.length;i++)   
+      m[1].add(mI1[i]);   
+    for(int i=0;i<mI2.length;i++)   
+      m[2].add(mI2[i]);   
+    for(int i=0;i<mI3.length;i++)   
+      m[3].add(mI3[i]);   
+    for(int i=0;i<mI4.length;i++)   
+      m[4].add(mI4[i]);   
+    for(int i=0;i<mI5.length;i++)   
+      m[5].add(mI5[i]);   
+    for(int i=0;i<mI6.length;i++)   
+      m[6].add(mI6[i]);   
+    for(int i=0;i<mI7.length;i++)   
+      m[7].add(mI7[i]);   
+    for(int i=0;i<mI8.length;i++)   
+      m[8].add(mI8[i]);   
+    for(int i=0;i<mI9.length;i++)   
+      m[9].add(mI9[i]);   
+    for(int i=0;i<mI10.length;i++)   
+      m[10].add(mI10[i]);//添加菜单项    
+        
+    J_Panel t = new J_Panel();   
+    t.setBounds(0,0,1300,700);   
+    c.add(t);     
+       
+    app.setVisible(true);   //框架设置可见   
+    
+  } //方法main结束   
+}//类Solarsystem结束
